@@ -2,7 +2,7 @@
 
 A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL library. Written from scratch against the SX1276 datasheet with no third-party dependencies beyond STM32 HAL.
 
-> ⚠️ **Work in progress** — core TX and RX are functional. Utility functions and continuous RX mode are still being completed.
+> ⚠️ **Work in progress**, core TX and RX are functional. Utility functions and continuous RX mode are still being completed.
 
 ---
 
@@ -23,14 +23,14 @@ A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL
 |------|---------|
 | SX1276 | Full |
 | SX1279 | Full |
-| SX1277 | SF6–SF9 only — SF10/11/12 not supported on this variant |
+| SX1277 | SF6–SF9 only, SF10/11/12 not supported on this variant |
 | SX1278 | Frequencies below 525 MHz only |
 
 ---
 
 ## Features
 
-- LoRa mode only — no FSK/OOK
+- LoRa mode only, no FSK/OOK
 - Single packet TX with TxDone polling
 - Single packet RX with RxDone polling and CRC check
 - Configurable spreading factor, bandwidth, coding rate, TX power, sync word, preamble length
@@ -59,7 +59,7 @@ Configure your SPI peripheral with these settings before using the driver:
 |---------|-------|
 | Mode | Full-Duplex Master |
 | CPOL | Low (0) |
-| CPHA | 1 Edge (0) — SPI Mode 0 |
+| CPHA | 1 Edge (0), SPI Mode 0 |
 | Data Size | 8 bits |
 | First Bit | MSB First |
 | NSS | Software |
@@ -138,7 +138,7 @@ if (result == HAL_OK) {
 The driver follows the sequence from the SX1276 datasheet section 4.1.3:
 
 1. Hardware reset via NRESET pin
-2. Read REG_VERSION (0x42) — must return 0x12
+2. Read REG_VERSION (0x42), must return 0x12
 3. Set Sleep mode
 4. Enable LoRa mode (can only be set in Sleep)
 5. Set FIFO base addresses
@@ -165,7 +165,7 @@ The driver follows the sequence from the SX1276 datasheet section 4.1.3:
 ## Dependencies
 
 - STM32 HAL (SPI and GPIO)
-- Tested on STM32F405RGT6 — should work on any STM32 with HAL SPI
+- Tested on STM32F405RGT6, should work on any STM32 with HAL SPI
 
 ---
 
