@@ -2,7 +2,7 @@
 
 A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL library. Written from scratch against the SX1276 datasheet with no third-party dependencies beyond STM32 HAL.
 
-> ⚠️ **Work in progress**, core TX and RX are functional. Utility functions and continuous RX mode are still being completed.
+> **Work in progress**, core TX and RX are functional. Utility functions and continuous RX mode are still being completed.
 
 ---
 
