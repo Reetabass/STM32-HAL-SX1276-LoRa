@@ -2,7 +2,7 @@
 
 A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL library. Written from scratch against the SX1276 datasheet with no third-party dependencies beyond STM32 HAL.
 
-> **Work in progress**, core TX and RX are functional. Utility functions and continuous RX mode are still being completed.
+> **Note:** Core TX and RX are functional, and the utility functions and continuous RX mode are now implemented.
 
 ---
 
@@ -23,7 +23,7 @@ A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL
 |------|---------|
 | SX1276 | Full |
 | SX1279 | Full |
-| SX1277 | SF6–SF9 only, SF10/11/12 not supported on this variant |
+| SX1277 | SF6 to SF9 only, SF10/11/12 not supported on this variant |
 | SX1278 | Frequencies below 525 MHz only |
 
 ---
@@ -33,10 +33,12 @@ A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL
 - LoRa mode only, no FSK/OOK
 - Single packet TX with TxDone polling
 - Single packet RX with RxDone polling and CRC check
+- Continuous RX mode
 - Configurable spreading factor, bandwidth, coding rate, TX power, sync word, preamble length
 - PA_BOOST and RFO pin support, including +20 dBm mode
 - Hardware reset sequence on init
 - SPI version register sanity check on init (reads REG_VERSION, expects 0x12)
+- Utility helpers: sleep, standby, packet RSSI, packet SNR, version read
 
 ---
 
@@ -46,8 +48,17 @@ A bare-metal LoRa driver for the Semtech SX1276 written in C using the STM32 HAL
 STM32-HAL-SX1276-LoRa/
 ├── LoRa.h        # Register defines, bitmasks, config struct, function prototypes
 ├── LoRa.c        # Driver implementation
+├── examples/     # Example usage showing packet structure and TX/RX
 └── README.md
 ```
+
+---
+
+## Examples
+
+The `examples/` folder contains working code that demonstrates how to structure a packet and send/receive it with this driver.
+
+> **Important:** The examples are written for a specific use case. They show how to build a packet structure and how to send and receive with guards in place, but the packet format is specific to that application. You will need to define your own packet structure to match your use case, or you can send and receive raw bytes with no guards. Use the examples as a structural reference, not as a drop-in.
 
 ---
 
@@ -63,7 +74,7 @@ Configure your SPI peripheral with these settings before using the driver:
 | Data Size | 8 bits |
 | First Bit | MSB First |
 | NSS | Software |
-| Baud Rate | ≤ 10 MHz |
+| Baud Rate | <= 10 MHz |
 
 NSS must be software-controlled and passed to the driver handle via the NSS GPIO port and pin; do not use hardware NSS.
 
@@ -100,7 +111,7 @@ LORA_CONFIG_TYPEDEF lora_config = {
 
 ```c
 if (lora_init(&lora_handle, &lora_config) != HAL_OK) {
-    // handle error — SPI not working or chip not found
+    // handle error, SPI not working or chip not found
 }
 ```
 
@@ -131,6 +142,31 @@ if (result == HAL_OK) {
 }
 ```
 
+### 5. Continuous RX
+
+```c
+uint8_t rx_buf[64];
+uint8_t rx_len = 0;
+
+lora_receive_cont(&lora_handle);  // place radio in continuous RX
+
+// poll for a packet without re-arming each time
+if (lora_RX(rx_buf, &rx_len, sizeof(rx_buf), 0) == HAL_OK) {
+    // packet received
+}
+```
+
+### 6. Utility functions
+
+```c
+lora_sleep(&lora_handle);          // enter sleep mode
+lora_standby(&lora_handle);        // enter standby mode
+
+int16_t rssi = lora_packet_rssi(&lora_handle);  // RSSI of last packet (dBm)
+int8_t  snr  = lora_packet_snr(&lora_handle);   // SNR of last packet (dB)
+uint8_t ver  = lora_version(&lora_handle);      // REG_VERSION, expect 0x12
+```
+
 ---
 
 ## Init Sequence
@@ -154,9 +190,7 @@ The driver follows the sequence from the SX1276 datasheet section 4.1.3:
 
 ## Known Limitations
 
-- Utility functions (`lora_sleep`, `lora_standby`, `lora_packet_rssi`, `lora_packet_snr`, `lora_version`) are not yet implemented
-- Continuous RX mode (`lora_receive_cont`) is not yet implemented
-- TX and RX use polling — DIO0 interrupt support is planned
+- TX and RX use polling, DIO0 interrupt support is planned
 - SF6 requires extra register writes and is not currently handled
 - No frequency hopping support
 
@@ -171,10 +205,10 @@ The driver follows the sequence from the SX1276 datasheet section 4.1.3:
 
 ## Reference
 
-Based on: **SX1276/77/78/79 Datasheet Rev.7 — Semtech Corporation, May 2020**
+Based on: **SX1276/77/78/79 Datasheet Rev.7, Semtech Corporation, May 2020**
 
 ---
 
 ## License
 
-MIT License — free to use, modify and distribute with attribution.
+MIT License, free to use, modify and distribute with attribution.
