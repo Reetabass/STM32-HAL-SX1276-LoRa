@@ -1,4 +1,7 @@
 #include "LoRa.h"
+
+/*main.h should be from your stm project where you assign pins for the driver */
+
 #include "main.h"
 #include "stm32_hal_legacy.h"
 #include "stm32f405xx.h"
@@ -482,6 +485,7 @@ HAL_StatusTypeDef lora_RX(uint8_t *buff, uint8_t *rx_length, uint8_t max_length,
         result = platform_read(&sx1, REG_IRQ_FLAGS, &buffer, 1);
         if(result != HAL_OK) return HAL_ERROR;
 
+
         if ((HAL_GetTick() - start) >= timeout_ms) {
             return HAL_TIMEOUT;
         }
@@ -492,9 +496,12 @@ HAL_StatusTypeDef lora_RX(uint8_t *buff, uint8_t *rx_length, uint8_t max_length,
     if(buffer & IRQ_PAYLOAD_CRC_ERR_MASK) return HAL_ERROR;
 
     result = platform_read(&sx1, REG_RX_NB_BYTES, &buffer, 1);
+    #ifdef DEBUG
+        printf("RX_NB_BYTES = %d\r\n", buffer);
+    #endif
     if(result != HAL_OK) return HAL_ERROR;
 
-    if (buffer >= max_length) return HAL_ERROR;
+    if (buffer > max_length) return HAL_ERROR;
 
     *rx_length = buffer;
 
@@ -516,5 +523,84 @@ HAL_StatusTypeDef lora_RX(uint8_t *buff, uint8_t *rx_length, uint8_t max_length,
 
     return result;
 
+
+}
+
+HAL_StatusTypeDef lora_sleep() {
+
+    HAL_StatusTypeDef result;
+    
+    uint8_t buffer;
+    
+    buffer = MODE_LONG_RANGE | MODE_SLEEP;
+    result = platform_write(&sx1, REG_OPMODE, &buffer, 1);
+
+    if(result != HAL_OK) return HAL_ERROR;
+
+    return result;
+    
+
+}
+
+HAL_StatusTypeDef lora_standby() {
+
+    HAL_StatusTypeDef result;
+    uint8_t buffer;
+    
+    buffer = MODE_LONG_RANGE | MODE_STAND_BY;
+    result = platform_write(&sx1, REG_OPMODE, &buffer, 1);
+
+    if(result != HAL_OK) return HAL_ERROR;
+
+    return result;
+
+
+}
+
+
+HAL_StatusTypeDef lora_packet_rssi(int16_t *dbm) {
+
+    HAL_StatusTypeDef result;
+    uint8_t buffer;
+
+    result = platform_read(&sx1, REG_PKT_RSSI_VALUE, &buffer, 1);
+    if(result != HAL_OK) return HAL_ERROR;
+
+    if (dbm == NULL) return HAL_ERROR;
+
+
+    *dbm = - 157 + buffer;
+
+    return result;
+    
+
+} /*returns dBm*/
+
+
+HAL_StatusTypeDef lora_version(uint8_t *lora_version) {
+
+    HAL_StatusTypeDef result;
+
+    result = platform_read(&sx1, REG_VERSION, lora_version, 1);
+    if(result != HAL_OK) return HAL_ERROR;
+    if(lora_version == NULL) return HAL_ERROR;
+
+    return result;
+
+} /*should return 0x12*/
+
+HAL_StatusTypeDef lora_packet_snr(float *snr) {
+
+    HAL_StatusTypeDef result;
+    /* Has to be signed as it can be neg */
+    int8_t buffer;
+    result = platform_read(&sx1, REG_PKT_SNR_VALUE, &buffer, 1);
+
+    if(result != HAL_OK) return HAL_ERROR;
+    if (snr == NULL) return HAL_ERROR;
+
+    *snr = (float)buffer / 4.0f;
+
+    return result;
 
 }
